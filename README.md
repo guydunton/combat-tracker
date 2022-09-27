@@ -32,6 +32,9 @@ combat-tracker show
 # Reduce the health of the beholder by 14
 combat-tracker damage beholder 14
 
+# Heal the beholder by 10
+combat-tracker heal beholder 10
+
 # Undo the last action
 combat-tracker undo
 ```

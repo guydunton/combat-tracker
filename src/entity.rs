@@ -52,4 +52,17 @@ impl Entity {
         }
         false
     }
+
+    pub fn increase_health(&mut self, hp: i32) {
+        match (self.current_hp, self.max_hp) {
+            (Some(mut current_hp), Some(max_hp)) => {
+                current_hp += hp;
+                if current_hp > max_hp {
+                    current_hp = max_hp
+                }
+                self.current_hp = Some(current_hp);
+            }
+            _ => {}
+        }
+    }
 }

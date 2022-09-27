@@ -4,20 +4,20 @@ mod state;
 use clap::{Arg, Command};
 use entity::Entity;
 use state::State;
-use std::fs::{read_to_string, File};
+use std::fs::{create_dir_all, read_to_string, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-fn get_app_dir() -> Option<PathBuf> {
+fn get_app_file(app_dir: PathBuf) -> PathBuf {
     let config_file_name = "config.json";
+    app_dir.join(config_file_name)
+}
+
+fn get_app_dir() -> Option<PathBuf> {
     if cfg!(debug_assertions) {
-        return Some(Path::new(".").join(config_file_name).to_path_buf());
+        return Some(Path::new(".").to_path_buf());
     } else {
-        return dirs::data_local_dir().map(|local_dir| {
-            local_dir
-                .join(Path::new("CombatTracker"))
-                .join(config_file_name)
-        });
+        return dirs::data_local_dir().map(|local_dir| local_dir.join(Path::new("CombatTracker")));
     }
 }
 
@@ -29,9 +29,15 @@ fn read_config_state(config_path: &PathBuf) -> State {
 }
 
 fn main() {
-    let config_path = get_app_dir();
+    let config_dir = get_app_dir().expect("To find a path to local data dir");
 
-    let config_path = config_path.expect("To find a path to local data dir");
+    if !config_dir.exists() {
+        create_dir_all(&config_dir).expect("To be able to create a config directory");
+    }
+
+    let config_path = get_app_file(config_dir);
+
+    // If the config directory doesn't exist then create it
 
     let mut state: State = read_config_state(&config_path);
 
@@ -110,6 +116,23 @@ fn main() {
                 )
             )
         .subcommand(
+            Command::new("heal")
+                .about("Heal a monster")
+                .arg(
+                    Arg::new("NAME")
+                        .help("The name of the creature")
+                        .index(1)
+                        .required(true)
+                )
+                .arg(
+                    Arg::new("HP")
+                        .help("The amount of health to heal by")
+                        .index(2)
+                        .required(true)
+                        .value_parser(clap::value_parser!(i32).range(0..1000)),
+                )
+        )
+        .subcommand(
             Command::new("start")
                 .about("Start the combat")
         )
@@ -146,7 +169,7 @@ fn main() {
 
             let damage = *damage_subcommand
                 .get_one::<i32>("HP")
-                .expect("To have an INITIATIVE parameter for add");
+                .expect("To have an HP parameter for add");
 
             match state.damage_entity(name, damage) {
                 Some(entity) => {
@@ -155,6 +178,24 @@ fn main() {
                     } else {
                         println!("{}: {}", entity.get_name(), entity.display_hp());
                     }
+                }
+                None => {
+                    println!("Entity not found")
+                }
+            }
+        }
+        Some(("heal", heal_subcommand)) => {
+            let name = heal_subcommand
+                .get_one::<String>("NAME")
+                .expect("To have a NAME parameter for add");
+
+            let hp = *heal_subcommand
+                .get_one::<i32>("HP")
+                .expect("To have an HP parameter for add");
+
+            match state.heal_entity(name, hp) {
+                Some(entity) => {
+                    println!("{} {}", entity.get_name(), entity.display_hp(),);
                 }
                 None => {
                     println!("Entity not found")

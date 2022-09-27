@@ -83,4 +83,12 @@ impl State {
             }
         }
     }
+
+    pub fn heal_entity(&mut self, name: &str, hp: i32) -> Option<&Entity> {
+        if let Some(entity) = self.entities.iter_mut().find(|e| e.get_name() == name) {
+            entity.increase_health(hp);
+            return Some(entity);
+        }
+        None
+    }
 }
