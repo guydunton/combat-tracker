@@ -10,10 +10,8 @@ pub struct State {
 impl State {
     /// Print the combat encounter to screen
     pub fn show(&self) {
-        let mut entities = self.entities.clone();
-        entities.sort_by(|a, b| b.get_rank().partial_cmp(&a.get_rank()).unwrap());
         println!("NAME INITIATIVE HP");
-        for entity in entities.iter() {
+        for entity in self.entities.iter() {
             println!(
                 "{} {} {}",
                 entity.get_name(),
@@ -24,7 +22,14 @@ impl State {
     }
 
     pub fn add_entity(&mut self, entity: Entity) {
-        self.entities.push(entity);
+        let index = self
+            .entities
+            .iter()
+            .enumerate()
+            .find(|(_, e)| e.get_initiative() < entity.get_initiative())
+            .map(|(index, _)| index)
+            .unwrap_or(self.entities.len());
+        self.entities.insert(index, entity);
     }
 
     pub fn damage_entity(&mut self, name: &str, damage: i32) -> Option<&Entity> {
@@ -36,8 +41,14 @@ impl State {
     }
 
     pub fn nudge(&mut self, name: &str) {
-        if let Some(entity) = self.entities.iter_mut().find(|e| e.get_name() == name) {
-            entity.bump_rank();
+        for (index, window) in self.entities.windows(2).enumerate() {
+            if window[1].get_name() == name
+                && window[0].get_initiative() == window[1].get_initiative()
+            {
+                // Swap them
+                self.entities.swap(index, index + 1);
+                return;
+            }
         }
     }
 }

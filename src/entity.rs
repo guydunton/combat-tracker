@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 pub struct Entity {
     name: String,
     initiative: i32,
-    rank: f32,
     max_hp: Option<i32>,
     current_hp: Option<i32>,
 }
@@ -14,7 +13,6 @@ impl Entity {
         Self {
             name: name.to_owned(),
             initiative,
-            rank: initiative as f32,
             max_hp: None,
             current_hp: None,
         }
@@ -24,7 +22,6 @@ impl Entity {
         Self {
             name: name.to_owned(),
             initiative,
-            rank: initiative as f32,
             max_hp: Some(max_hp),
             current_hp: Some(max_hp),
         }
@@ -36,14 +33,6 @@ impl Entity {
 
     pub fn get_initiative(&self) -> i32 {
         self.initiative
-    }
-
-    pub fn get_rank(&self) -> f32 {
-        self.rank
-    }
-
-    pub fn bump_rank(&mut self) {
-        self.rank += 0.1;
     }
 
     pub fn display_hp(&self) -> String {
