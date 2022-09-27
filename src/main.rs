@@ -109,6 +109,14 @@ fn main() {
                         .required(true)
                 )
             )
+        .subcommand(
+            Command::new("start")
+                .about("Start the combat")
+        )
+        .subcommand(
+            Command::new("next")
+                .about("Move combat onto the next monster/character")
+        )
         .get_matches();
 
     // Modify the app data
@@ -159,6 +167,16 @@ fn main() {
                 .expect("To have a NAME parameter for add");
 
             state.nudge(name);
+        }
+        Some(("start", _)) => {
+            if let Some(entity) = state.start() {
+                println!("{}'s turn", entity.get_name());
+            }
+        }
+        Some(("next", _)) => {
+            if let Some(entity) = state.next_turn() {
+                println!("{}'s turn", entity.get_name());
+            }
         }
         Some(("reset", _)) => {
             state = State::default();

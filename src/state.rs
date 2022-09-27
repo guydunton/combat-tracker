@@ -4,6 +4,7 @@ use crate::entity::Entity;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct State {
+    turn: usize,
     entities: Vec<Entity>,
 }
 
@@ -11,9 +12,10 @@ impl State {
     /// Print the combat encounter to screen
     pub fn show(&self) {
         println!("NAME INITIATIVE HP");
-        for entity in self.entities.iter() {
+        for (index, entity) in self.entities.iter().enumerate() {
             println!(
-                "{} {} {}",
+                "{} {} {} {}",
+                if index == self.turn { "*" } else { " " },
                 entity.get_name(),
                 entity.get_initiative(),
                 entity.display_hp()
@@ -50,5 +52,19 @@ impl State {
                 return;
             }
         }
+    }
+
+    pub fn start(&mut self) -> Option<&Entity> {
+        self.turn = 0;
+        self.entities.get(self.turn)
+    }
+
+    pub fn next_turn(&mut self) -> Option<&Entity> {
+        self.turn = if self.turn + 1 >= self.entities.len() {
+            0
+        } else {
+            self.turn + 1
+        };
+        self.entities.get(self.turn)
     }
 }
