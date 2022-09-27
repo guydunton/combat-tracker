@@ -60,11 +60,27 @@ impl State {
     }
 
     pub fn next_turn(&mut self) -> Option<&Entity> {
-        self.turn = if self.turn + 1 >= self.entities.len() {
-            0
-        } else {
-            self.turn + 1
-        };
-        self.entities.get(self.turn)
+        // Find the next index which doesn't have a dead character
+        let mut index = self.turn;
+        loop {
+            // Increment the index
+            index = if index + 1 >= self.entities.len() {
+                0
+            } else {
+                index + 1
+            };
+
+            // if the character isn't dead break
+            if !self.entities[index].is_dead() {
+                self.turn = index;
+                return self.entities.get(index);
+            }
+
+            // Prevent an infinite loop
+            if index == self.turn {
+                self.turn = index;
+                return None;
+            }
+        }
     }
 }
