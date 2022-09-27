@@ -48,3 +48,9 @@ The program will create a `CombatTracker` directory one of the following directo
 | Linux    | $XDG_DATA_HOME or $HOME/.local/share | /home/alice/.local/share                 |
 | macOS    | $HOME/Library/Application Support    | /Users/Alice/Library/Application Support |
 | Windows  | {FOLDERID_LocalAppData}              | C:\Users\Alice\AppData\Local             |
+
+## TODOS
+
+- [ ] Undo - Use `combat-tracker undo` to undo the last action
+- [ ] History - Be able to view the history of commands which have modified state
+- [ ] Query history - Be able to query history e.g. _how much damage was done to monster X in the last turn_
