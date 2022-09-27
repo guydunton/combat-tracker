@@ -41,4 +41,10 @@ combat-tracker undo
 
 ## How it works
 
-The program will create a `.combat-tracker` directory in `$HOME` to save combat data in between invocations.
+The program will create a `CombatTracker` directory one of the following directories to save combat data in between invocations:
+
+| Platform | Value                                | Example                                  |
+| -------- | ------------------------------------ | ---------------------------------------- |
+| Linux    | $XDG_DATA_HOME or $HOME/.local/share | /home/alice/.local/share                 |
+| macOS    | $HOME/Library/Application Support    | /Users/Alice/Library/Application Support |
+| Windows  | {FOLDERID_LocalAppData}              | C:\Users\Alice\AppData\Local             |
