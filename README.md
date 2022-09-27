@@ -2,6 +2,15 @@
 
 This app makes it simpler to manage combat as a TTRPG GM.
 
+## How to install
+
+- Check out the code
+- Install the code:
+
+```bash
+cargo install --path .
+```
+
 ## Commands
 
 ```bash
