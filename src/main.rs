@@ -1,8 +1,10 @@
+mod action;
 mod entity;
 mod state;
+mod table;
 
+use action::Action;
 use clap::{Arg, Command};
-use entity::Entity;
 use state::State;
 use std::fs::{create_dir_all, read_to_string, File};
 use std::io::Write;
@@ -28,16 +30,41 @@ fn read_config_state(config_path: &PathBuf) -> State {
         .unwrap_or_default()
 }
 
+fn print_action(state: &State, action: &Action) {
+    match action {
+        Action::Damage(name, _) => {
+            if let Some(entity) = state.get_entity(&name) {
+                if entity.is_dead() {
+                    println!("{} Killed", entity.get_name());
+                } else {
+                    println!("{}: {}", entity.get_name(), entity.display_hp());
+                }
+            }
+        }
+        Action::Heal(name, _) => {
+            if let Some(entity) = state.get_entity(&name) {
+                println!("{} {}", entity.get_name(), entity.display_hp());
+            }
+        }
+        Action::StartEncounter => {
+            println!("{}'s turn", state.current_turn_entity().get_name());
+        }
+        Action::ChangeTurn => {
+            println!("{}'s turn", state.current_turn_entity().get_name());
+        }
+        _ => {}
+    }
+}
+
 fn main() {
     let config_dir = get_app_dir().expect("To find a path to local data dir");
 
+    // If the config directory doesn't exist then create it
     if !config_dir.exists() {
         create_dir_all(&config_dir).expect("To be able to create a config directory");
     }
 
     let config_path = get_app_file(config_dir);
-
-    // If the config directory doesn't exist then create it
 
     let mut state: State = read_config_state(&config_path);
 
@@ -140,6 +167,10 @@ fn main() {
             Command::new("next")
                 .about("Move combat onto the next monster/character")
         )
+        .subcommand(
+            Command::new("undo")
+                .about("Undo the last action")
+        )
         .get_matches();
 
     // Modify the app data
@@ -155,12 +186,8 @@ fn main() {
 
             let max_hp = add_subcommand.get_one::<i32>("HP").map(|v| *v);
 
-            match max_hp {
-                Some(hp) => {
-                    state.add_entity(Entity::monster(name, initiative, hp));
-                }
-                None => state.add_entity(Entity::player(name, initiative)),
-            }
+            let action = Action::AddEntity(name.clone(), initiative, max_hp);
+            state.process_action(&action)
         }
         Some(("damage", damage_subcommand)) => {
             let name = damage_subcommand
@@ -171,18 +198,10 @@ fn main() {
                 .get_one::<i32>("HP")
                 .expect("To have an HP parameter for add");
 
-            match state.damage_entity(name, damage) {
-                Some(entity) => {
-                    if entity.is_dead() {
-                        println!("{} Killed", entity.get_name());
-                    } else {
-                        println!("{}: {}", entity.get_name(), entity.display_hp());
-                    }
-                }
-                None => {
-                    println!("Entity not found")
-                }
-            }
+            let action = Action::Damage(name.clone(), damage);
+
+            state.process_action(&action);
+            print_action(&state, &action);
         }
         Some(("heal", heal_subcommand)) => {
             let name = heal_subcommand
@@ -193,34 +212,33 @@ fn main() {
                 .get_one::<i32>("HP")
                 .expect("To have an HP parameter for add");
 
-            match state.heal_entity(name, hp) {
-                Some(entity) => {
-                    println!("{} {}", entity.get_name(), entity.display_hp(),);
-                }
-                None => {
-                    println!("Entity not found")
-                }
-            }
+            let action = Action::Heal(name.clone(), hp);
+            state.process_action(&action);
+            print_action(&state, &action);
         }
         Some(("nudge", nudge_subcommand)) => {
             let name = nudge_subcommand
                 .get_one::<String>("NAME")
                 .expect("To have a NAME parameter for add");
 
-            state.nudge(name);
+            let action = Action::NudgeEntity(name.clone());
+            state.process_action(&action);
         }
         Some(("start", _)) => {
-            if let Some(entity) = state.start() {
-                println!("{}'s turn", entity.get_name());
-            }
+            let action = Action::StartEncounter;
+            state.process_action(&action);
+            print_action(&state, &action);
         }
         Some(("next", _)) => {
-            if let Some(entity) = state.next_turn() {
-                println!("{}'s turn", entity.get_name());
-            }
+            let action = Action::ChangeTurn;
+            state.process_action(&action);
+            print_action(&state, &action);
         }
         Some(("reset", _)) => {
             state = State::default();
+        }
+        Some(("undo", _)) => {
+            state.undo();
         }
         Some(("show", _)) => state.show(),
         _ => {
