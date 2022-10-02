@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{action::Action, entity::Entity, table::Table};
 
 #[derive(Serialize, Deserialize)]
-struct Event {
+pub struct Event {
     round: i32,
     action: Action,
 }
@@ -173,11 +173,35 @@ impl State {
                         entity.reduce_health(hp);
                     }
                 }
+                Action::AddEntity(name, _, _) => {
+                    if let Some(index) = self
+                        .entities
+                        .iter()
+                        .enumerate()
+                        .find(|(_, e)| e.get_name() == name)
+                        .map(|(index, _)| index)
+                    {
+                        self.entities.remove(index);
+                    }
+                }
+                Action::ChangeTurn => {
+                    let (subbed_value, underflow) = self.turn.overflowing_sub(1);
+                    if underflow {
+                        self.turn = self.entities.len() - 1;
+                        self.round -= 1;
+                    } else {
+                        self.turn = subbed_value;
+                    }
+                }
                 _ => {
                     println!("Action not supported by undo. Cannot undo");
                     self.history.push(action);
                 }
             }
         }
+    }
+
+    pub fn history(&self) -> &Vec<Event> {
+        &self.history
     }
 }

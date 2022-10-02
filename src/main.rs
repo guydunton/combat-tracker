@@ -166,10 +166,15 @@ fn main() {
         .subcommand(
             Command::new("next")
                 .about("Move combat onto the next monster/character")
+                .visible_alias("n")
         )
         .subcommand(
             Command::new("undo")
                 .about("Undo the last action")
+        )
+        .subcommand(
+            Command::new("history")
+                .about("Show the history of commands")
         )
         .get_matches();
 
@@ -239,6 +244,9 @@ fn main() {
         }
         Some(("undo", _)) => {
             state.undo();
+        }
+        Some(("history", _)) => {
+            println!("{}", serde_json::to_string(state.history()).unwrap());
         }
         Some(("show", _)) => state.show(),
         _ => {
