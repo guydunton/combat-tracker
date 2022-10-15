@@ -54,3 +54,13 @@ The program will create a `CombatTracker` directory one of the following directo
 - [x] Undo - Use `combat-tracker undo` to undo the last action
 - [x] History - Be able to view the history of commands which have modified state
 - [ ] Query history - Be able to query history e.g. _how much damage was done to monster X in the last turn_
+
+## Querying history
+
+With querying I want to be able to answer the following questions:
+
+- How much damage was done to a monster last turn?
+
+```bash
+combat-tracker history --query 'type:damage & round:1 & name:goblin | sum'
+```

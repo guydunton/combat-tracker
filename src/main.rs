@@ -4,7 +4,7 @@ mod state;
 mod table;
 
 use action::Action;
-use clap::{Arg, Command};
+use clap::{Arg, ArgAction, Command};
 use state::State;
 use std::fs::{create_dir_all, read_to_string, File};
 use std::io::Write;
@@ -32,7 +32,7 @@ fn read_config_state(config_path: &PathBuf) -> State {
 
 fn print_action(state: &State, action: &Action) {
     match action {
-        Action::Damage(name, _) => {
+        Action::Damage { name, hp: _ } => {
             if let Some(entity) = state.get_entity(&name) {
                 if entity.is_dead() {
                     println!("{} Killed", entity.get_name());
@@ -41,7 +41,7 @@ fn print_action(state: &State, action: &Action) {
                 }
             }
         }
-        Action::Heal(name, _) => {
+        Action::Heal { name, hp: _ } => {
             if let Some(entity) = state.get_entity(&name) {
                 println!("{} {}", entity.get_name(), entity.display_hp());
             }
@@ -113,6 +113,13 @@ fn main() {
         .subcommand(
             Command::new("show")
                 .visible_alias("ls")
+                .arg(
+                    Arg::new("all")
+                        .long("all")
+                        .short('a')
+                        .help("Include enemies which have been killed")
+                        .action(ArgAction::SetTrue)
+                )
                 .about("Show the encounter"),
         )
         .subcommand(
@@ -176,6 +183,7 @@ fn main() {
             Command::new("history")
                 .about("Show the history of commands")
         )
+        .subcommand_negates_reqs(true)
         .get_matches();
 
     // Modify the app data
@@ -191,7 +199,11 @@ fn main() {
 
             let max_hp = add_subcommand.get_one::<i32>("HP").map(|v| *v);
 
-            let action = Action::AddEntity(name.clone(), initiative, max_hp);
+            let action = Action::AddEntity {
+                name: name.clone(),
+                initiative,
+                hp: max_hp,
+            };
             state.process_action(&action)
         }
         Some(("damage", damage_subcommand)) => {
@@ -203,7 +215,10 @@ fn main() {
                 .get_one::<i32>("HP")
                 .expect("To have an HP parameter for add");
 
-            let action = Action::Damage(name.clone(), damage);
+            let action = Action::Damage {
+                name: name.clone(),
+                hp: damage,
+            };
 
             state.process_action(&action);
             print_action(&state, &action);
@@ -217,7 +232,10 @@ fn main() {
                 .get_one::<i32>("HP")
                 .expect("To have an HP parameter for add");
 
-            let action = Action::Heal(name.clone(), hp);
+            let action = Action::Heal {
+                name: name.clone(),
+                hp,
+            };
             state.process_action(&action);
             print_action(&state, &action);
         }
@@ -226,7 +244,7 @@ fn main() {
                 .get_one::<String>("NAME")
                 .expect("To have a NAME parameter for add");
 
-            let action = Action::NudgeEntity(name.clone());
+            let action = Action::NudgeEntity { name: name.clone() };
             state.process_action(&action);
         }
         Some(("start", _)) => {
@@ -248,7 +266,10 @@ fn main() {
         Some(("history", _)) => {
             println!("{}", serde_json::to_string(state.history()).unwrap());
         }
-        Some(("show", _)) => state.show(),
+        Some(("show", show_command)) => {
+            let include_dead = *show_command.get_one::<bool>("all").unwrap();
+            state.show(include_dead);
+        }
         _ => {
             println!("Unknown command. Please refer to combat-tracker --help");
         }

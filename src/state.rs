@@ -18,7 +18,7 @@ pub struct State {
 
 impl State {
     /// Print the combat encounter to screen
-    pub fn show(&self) {
+    pub fn show(&self, include_dead: bool) {
         let mut table = Table::new(vec![
             "".to_owned(),
             "NAME".to_owned(),
@@ -27,16 +27,18 @@ impl State {
         ]);
 
         for (index, entity) in self.entities.iter().enumerate() {
-            table.add_row(vec![
-                if index == self.turn {
-                    "*".to_owned()
-                } else {
-                    "".to_owned()
-                },
-                entity.get_name().to_owned(),
-                format!("{}", entity.get_initiative()),
-                entity.display_hp(),
-            ]);
+            if include_dead || !entity.is_dead() {
+                table.add_row(vec![
+                    if index == self.turn {
+                        "*".to_owned()
+                    } else {
+                        "".to_owned()
+                    },
+                    entity.get_name().to_owned(),
+                    format!("{}", entity.get_initiative()),
+                    entity.display_hp(),
+                ]);
+            }
         }
 
         table.print();
@@ -133,10 +135,14 @@ impl State {
         });
 
         match action.clone() {
-            Action::Damage(name, hp) => {
+            Action::Damage { name, hp } => {
                 self.damage_entity(&name, hp);
             }
-            Action::AddEntity(name, initiative, hp) => match hp {
+            Action::AddEntity {
+                name,
+                initiative,
+                hp,
+            } => match hp {
                 Some(hp) => {
                     self.add_entity(Entity::monster(&name, initiative, hp));
                 }
@@ -144,10 +150,10 @@ impl State {
                     self.add_entity(Entity::player(&name, initiative));
                 }
             },
-            Action::Heal(name, hp) => {
+            Action::Heal { name, hp } => {
                 self.heal_entity(&name, hp);
             }
-            Action::NudgeEntity(name) => {
+            Action::NudgeEntity { name } => {
                 self.nudge(&name);
             }
             Action::ChangeTurn => {
@@ -163,17 +169,21 @@ impl State {
         // Pull the last action from the queue
         if let Some(action) = self.history.pop() {
             match action.action {
-                Action::Damage(name, hp) => {
+                Action::Damage { name, hp } => {
                     if let Some(entity) = self.get_entity_mut(&name) {
                         entity.increase_health(hp);
                     }
                 }
-                Action::Heal(name, hp) => {
+                Action::Heal { name, hp } => {
                     if let Some(entity) = self.get_entity_mut(&name) {
                         entity.reduce_health(hp);
                     }
                 }
-                Action::AddEntity(name, _, _) => {
+                Action::AddEntity {
+                    name,
+                    initiative: _,
+                    hp: _,
+                } => {
                     if let Some(index) = self
                         .entities
                         .iter()
