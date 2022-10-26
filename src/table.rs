@@ -46,7 +46,7 @@ impl Table {
         column_widths.reserve(self.headers.len());
 
         for i in 0..self.headers.len() {
-            let max_len = self.rows.iter().map(|row| row[i].len()).max().unwrap();
+            let max_len = self.rows.iter().map(|row| row[i].len()).max().unwrap_or(0);
 
             column_widths.push(max_len.max(self.headers[i].len()));
         }
